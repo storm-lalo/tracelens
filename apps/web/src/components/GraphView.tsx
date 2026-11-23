@@ -50,6 +50,7 @@ export default function GraphView({ entities, links, selectedId, onSelect }: Pro
   const nodesRef = useRef<Map<string, SimNode>>(new Map())
   const dragRef = useRef<SimNode | null>(null)
   const [size, setSize] = useState({ width: 900, height: 560 })
+  const [hoverId, setHoverId] = useState<string | null>(null)
   const [, setTick] = useState(0)
 
   useEffect(() => {
@@ -121,6 +122,17 @@ export default function GraphView({ entities, links, selectedId, onSelect }: Pro
     // tick drives this memo indirectly through the render counter
   }, [entities, links, size.width, size.height, selectedId, nodeById, simulationRef.current])
 
+  const highlightId = hoverId ?? selectedId
+  const highlighted = useMemo(() => {
+    if (!highlightId) return null
+    const ids = new Set<string>([highlightId])
+    for (const link of links) {
+      if (link.source === highlightId) ids.add(link.target)
+      if (link.target === highlightId) ids.add(link.source)
+    }
+    return ids
+  }, [highlightId, links])
+
   const handlePointerDown = (node: SimNode) => (event: ReactPointerEvent<SVGGElement>) => {
     event.currentTarget.setPointerCapture(event.pointerId)
     dragRef.current = node
@@ -182,7 +194,8 @@ export default function GraphView({ entities, links, selectedId, onSelect }: Pro
             const source = link.source as SimNode
             const target = link.target as SimNode
             if (!source || !target || typeof source === 'string' || typeof target === 'string') return null
-            const active = selectedId === source.id || selectedId === target.id
+            const active = highlightId === source.id || highlightId === target.id
+            const dimmed = highlighted ? source.id !== highlightId && target.id !== highlightId : false
             return (
               <line
                 key={`${source.id}-${target.id}-${index}`}
@@ -191,7 +204,7 @@ export default function GraphView({ entities, links, selectedId, onSelect }: Pro
                 x2={target.x}
                 y2={target.y}
                 stroke={active ? '#7ef9e3' : '#2c4a66'}
-                strokeOpacity={active ? 0.95 : 0.45}
+                strokeOpacity={dimmed ? 0.1 : active ? 0.95 : 0.45}
                 strokeWidth={active ? 1.8 : 0.9}
               >
                 <title>{link.relation}</title>
@@ -205,22 +218,26 @@ export default function GraphView({ entities, links, selectedId, onSelect }: Pro
             const r = radius(node.entity)
             const color = TYPE_COLOR[node.entity.type] ?? '#8ecae6'
             const selected = selectedId === node.id
+            const dimmed = highlighted ? !highlighted.has(node.id) : false
+            const active = highlightId === node.id
             return (
               <g
                 key={node.id}
                 transform={`translate(${node.x ?? 0},${node.y ?? 0})`}
-                className={`graph-node${selected ? ' selected' : ''}`}
+                className={`graph-node${selected ? ' selected' : ''}${dimmed ? ' dimmed' : ''}`}
                 onPointerDown={handlePointerDown(node)}
+                onPointerEnter={() => setHoverId(node.id)}
+                onPointerLeave={() => setHoverId((current) => (current === node.id ? null : current))}
                 onClick={(event) => {
                   event.stopPropagation()
                   onSelect(node.id)
                 }}
               >
-                {selected && <circle r={r + 9} fill="none" stroke={color} strokeOpacity="0.45" strokeWidth="1" />}
-                <circle r={r} fill="#0d1726" stroke={color} strokeWidth={selected ? 2.6 : 1.6} filter="url(#node-glow)" />
+                {(selected || active) && <circle r={r + 9} fill="none" stroke={color} strokeOpacity="0.45" strokeWidth="1" />}
+                <circle r={r} fill="#0d1726" stroke={color} strokeWidth={active ? 2.6 : selected ? 2.2 : 1.6} filter="url(#node-glow)" />
                 <circle r={Math.max(2.5, r * 0.28)} fill={color} opacity="0.95" />
-                <text y={r + 16} textAnchor="middle" className="graph-node-label">
-                  {shorten(node.entity.value, 22)}
+                <text y={r + (active ? 18 : 16)} textAnchor="middle" className={`graph-node-label${active ? ' active' : ''}`}>
+                  {shorten(node.entity.value, active ? 28 : 22)}
                 </text>
                 <title>{`${node.entity.type}: ${node.entity.value}\nRisk ${node.entity.risk}`}</title>
               </g>

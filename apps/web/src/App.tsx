@@ -5,12 +5,20 @@ import GraphView, { TYPE_COLOR } from './components/GraphView'
 import Inspector from './components/Inspector'
 import Sidebar from './components/Sidebar'
 import CompareModal from './components/CompareModal'
+import WatchlistModal from './components/WatchlistModal'
 
 const EXAMPLE_FALLBACK: Example[] = [
   { label: 'Corporate domain', value: 'northwind-labs.io' },
   { label: 'Username', value: 'octocat' },
   { label: 'IP address', value: '203.0.113.42' },
 ]
+
+function riskTone(score: number): string {
+  if (score >= 76) return 'critical'
+  if (score >= 56) return 'high'
+  if (score >= 31) return 'medium'
+  return 'low'
+}
 
 export default function App() {
   const [query, setQuery] = useState('northwind-labs.io')
@@ -22,6 +30,8 @@ export default function App() {
   const [error, setError] = useState<string | null>(null)
   const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null)
   const [compareOpen, setCompareOpen] = useState(false)
+  const [watchlistOpen, setWatchlistOpen] = useState(false)
+  const [unreadAlerts, setUnreadAlerts] = useState(0)
 
   const loadHistory = useCallback(async () => {
     try {
@@ -31,18 +41,32 @@ export default function App() {
     }
   }, [])
 
+  const loadUnread = useCallback(async () => {
+    try {
+      const items = await api.alerts()
+      setUnreadAlerts(items.filter((alert) => !alert.acknowledged).length)
+    } catch {
+      // Alerts are non-critical; keep the workspace usable.
+    }
+  }, [])
+
   useEffect(() => {
     api.health().then(setHealth).catch(() => setHealth(null))
     api.examples().then(setExamples).catch(() => undefined)
     void loadHistory()
-  }, [loadHistory])
+    void loadUnread()
+    const timer = window.setInterval(() => void loadUnread(), 30_000)
+    return () => window.clearInterval(timer)
+  }, [loadHistory, loadUnread])
 
-  const run = useCallback(async () => {
-    if (query.trim().length < 2) return
+  const run = useCallback(async (override?: string) => {
+    const target = (override ?? query).trim()
+    if (target.length < 2) return
+    setQuery(target)
     setLoading(true)
     setError(null)
     try {
-      const result = await api.investigate(query.trim())
+      const result = await api.investigate(target)
       setInvestigation(result)
       setSelectedEntityId(null)
       await loadHistory()
@@ -105,6 +129,14 @@ export default function App() {
           <span className="version">v0.1.0 · demo build</span>
         </div>
         <div className="topbar-actions">
+          <button
+            className="ghost-button watch-button"
+            onClick={() => setWatchlistOpen(true)}
+            title="Scheduled investigations and drift alerts"
+          >
+            ◉ Watch
+            {unreadAlerts > 0 && <span className="alert-badge">{unreadAlerts}</span>}
+          </button>
           <button
             className="ghost-button"
             onClick={() => setCompareOpen(true)}
@@ -198,6 +230,18 @@ export default function App() {
                 <button className="primary-button" onClick={() => void run()} disabled={loading}>
                   {loading ? 'Tracing…' : '✦ Run demo investigation'}
                 </button>
+                <div className="example-chips">
+                  {examples.slice(0, 4).map((example) => (
+                    <button
+                      key={example.value}
+                      className="example-chip"
+                      disabled={loading}
+                      onClick={() => void run(example.value)}
+                    >
+                      {example.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -213,7 +257,10 @@ export default function App() {
                 ))}
               </div>
               <div className="metrics-bar">
-                <div className="risk-gauge" style={{ '--score': `${investigation.score * 3.6}deg` } as CSSProperties}>
+                <div
+                  className={`risk-gauge tone-${riskTone(investigation.score)}`}
+                  style={{ '--score': `${investigation.score * 3.6}deg` } as CSSProperties}
+                >
                   <div className="risk-gauge-inner">
                     <strong>{investigation.score}</strong>
                     <span>RISK</span>
@@ -249,6 +296,13 @@ export default function App() {
       </main>
 
       {compareOpen && <CompareModal history={history} onClose={() => setCompareOpen(false)} />}
+      {watchlistOpen && (
+        <WatchlistModal
+          onClose={() => setWatchlistOpen(false)}
+          onOpenInvestigation={(id) => void load(id)}
+          onAlertsChanged={() => void loadUnread()}
+        />
+      )}
     </div>
   )
 }

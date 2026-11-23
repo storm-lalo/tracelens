@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildGraph,
+  assessDrift,
   buildTimeline,
   compareInvestigations,
   connectedComponents,
@@ -120,6 +121,33 @@ describe('investigation pipeline', () => {
     expect(comparison.sharedEntities).toHaveLength(before.entities.length)
     expect(comparison.resolvedFindings).toHaveLength(1)
     expect(comparison.narrative).toContain('improved by 20 points')
+  })
+
+  it('assesses drift with a configurable threshold', async () => {
+    const baseline = await investigate('drift-example.com', { providers: [new MockProvider()] })
+    const unchanged = assessDrift(compareInvestigations(baseline, { ...baseline }), 10)
+    expect(unchanged.hasDrift).toBe(false)
+
+    const worse = {
+      ...baseline,
+      score: Math.min(100, baseline.score + 20),
+      findings: [
+        ...baseline.findings,
+        {
+          id: 'f-critical-new',
+          severity: 'critical' as const,
+          title: 'New critical exposure',
+          detail: 'A newly introduced critical issue',
+          entityIds: [],
+          recommendation: 'Remediate immediately',
+        },
+      ],
+    }
+    const drift = assessDrift(compareInvestigations(baseline, worse), 10)
+    expect(drift.hasDrift).toBe(true)
+    expect(drift.severity).toBe('critical')
+    expect(drift.reasons.join(' ')).toContain('Risk score increased by 20 points')
+    expect(drift.reasons.join(' ')).toContain('critical finding appeared')
   })
 
   it('builds a chronological timeline and a print-ready report', async () => {

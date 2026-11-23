@@ -90,6 +90,43 @@ export interface Investigation {
   timeline?: TimelineEvent[]
 }
 
+/** A recurring investigation with an alert threshold. */
+export interface Watch {
+  id: string
+  query: string
+  intervalMinutes: number
+  alertThreshold: number
+  enabled: boolean
+  createdAt: string
+  lastRunAt: string | null
+  nextRunAt: string
+  lastError: string | null
+}
+
+/** Raised when a recurring investigation drifts beyond its configured threshold. */
+export interface DriftAlert {
+  id: string
+  watchId: string
+  query: string
+  createdAt: string
+  severity: Severity
+  title: string
+  detail: string
+  scoreDelta: number
+  investigationId: string
+  previousInvestigationId: string
+  acknowledged: boolean
+}
+
+export interface SchedulerStatus {
+  running: boolean
+  tickMs: number
+  watchCount: number
+  alertCount: number
+  unacknowledgedCount: number
+  lastTickAt: string | null
+}
+
 export interface InvestigationSummary {
   id: string
   query: string

@@ -36,6 +36,7 @@ Everything runs locally. No API keys are required for the full demo experience.
 - **Analyst brief** — deterministic local analyst out of the box, optional OpenAI-compatible provider.
 - **Before/after comparison** — diff two investigations to see score movement, new findings, resolved findings, and entity churn.
 - **Observation timeline** — a chronological view of every collected signal and derived finding, filterable by kind.
+- **Continuous monitoring** — schedule recurring investigations and raise drift alerts when risk scores, findings, or entity footprints change materially.
 - **Exportable reports** — Markdown/Mermaid from the UI or CLI, plus a print-ready HTML view for **Save as PDF**.
 - **CLI included** — `tracelens investigate example.com --report report.md`.
 - **Typed end-to-end** — shared TypeScript domain model between core, API, CLI, and UI.
@@ -108,6 +109,12 @@ tracelens/
 | `GET` | `/api/investigations/:id/report` | Markdown report |
 | `POST` | `/api/compare` | Diff two investigations (`{ "left": "id", "right": "id" }`) |
 | `GET` | `/api/investigations/:id/print` | Print-ready HTML report |
+| `GET` | `/api/scheduler` | Scheduler status and alert counters |
+| `GET` / `POST` | `/api/watches` | List or create a recurring investigation |
+| `PATCH` / `DELETE` | `/api/watches/:id` | Pause/resume or remove a watch |
+| `POST` | `/api/watches/:id/run` | Trigger a watch immediately |
+| `GET` | `/api/alerts` | List drift alerts |
+| `POST` | `/api/alerts/:id/acknowledge` | Mark an alert as read |
 
 ## Extending it
 
@@ -143,6 +150,16 @@ Implement `LLMProvider.analyze(input)` and pass it as `investigate(query, { llm:
 
 The score is a weighted blend of the eight highest entity risks (45%) and the summed severity of findings (55%), capped at 100. Grades: **A** <20, **B** <40, **C** <60, **D** <80, **F** ≥80. Severity weights and exact equations are documented in `packages/core/src/scoring.ts`.
 
+## Continuous monitoring
+
+Create a watch from the **◉ Watch** button in the UI (minimum interval: 5 minutes). The in-process scheduler ticks every 30 seconds, re-runs due targets, and diffs each new investigation against the previous one for the same query. An alert is raised when any of these hold:
+
+- the absolute score movement reaches the watch's **Alert Δ** threshold;
+- a new `high` or `critical` finding appears;
+- the entity footprint grows or shrinks by 8 or more nodes.
+
+Alerts show severity, score delta, and the reasoning, plus a direct link to the new investigation. Acknowledging an alert removes it from the unread badge. Watches and alerts persist in the gitignored `data/` directory alongside investigations.
+
 ## Roadmap
 
 - [x] Typed core pipeline and deterministic demo provider
@@ -153,8 +170,9 @@ The score is a weighted blend of the eight highest entity risks (45%) and the su
 - [x] Comparison view between two investigations
 - [x] Timeline view of signal observations
 - [x] Print-ready report export (Save as PDF from the browser)
+- [x] Scheduled re-investigations and drift alerts
 - [ ] Authenticated live providers with credential handling
-- [ ] Scheduled re-investigations and drift alerts
+- [ ] Email/webhook alert delivery
 
 ## Ethics & disclaimer
 
