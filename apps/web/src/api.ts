@@ -1,4 +1,4 @@
-import type { Investigation, InvestigationSummary } from '@tracelens/core'
+import type { Comparison, Investigation, InvestigationSummary } from '@tracelens/core'
 
 export interface Example {
   label: string
@@ -35,5 +35,7 @@ export const api = {
       body: JSON.stringify({ query }),
     }),
   get: (id: string) => request<Investigation>(`/investigations/${id}`),
+  compare: (left: string, right: string) =>
+    request<Comparison>('/compare', { method: 'POST', body: JSON.stringify({ left, right }) }),
   reportUrl: (id: string) => `/api/investigations/${id}/report`,
 }

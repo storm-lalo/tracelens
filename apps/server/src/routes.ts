@@ -1,5 +1,5 @@
 import { Router, type Request, type Response, type NextFunction } from 'express'
-import { investigate, providersFromEnvironment, toMarkdown } from '@tracelens/core'
+import { compareInvestigations, investigate, providersFromEnvironment, toMarkdown } from '@tracelens/core'
 import { getInvestigation, listInvestigations, saveInvestigation, stats } from './store'
 
 const EXAMPLES = [
@@ -73,4 +73,15 @@ api.get('/investigations/:id/report', asyncRoute(async (req, res) => {
     return
   }
   res.type('text/markdown').send(toMarkdown(investigation))
+}))
+
+api.post('/compare', asyncRoute(async (req, res) => {
+  const leftId = typeof req.body?.left === 'string' ? req.body.left : ''
+  const rightId = typeof req.body?.right === 'string' ? req.body.right : ''
+  const [left, right] = await Promise.all([getInvestigation(leftId), getInvestigation(rightId)])
+  if (!left || !right) {
+    res.status(404).json({ error: 'One or both investigations were not found' })
+    return
+  }
+  res.json(compareInvestigations(left, right))
 }))

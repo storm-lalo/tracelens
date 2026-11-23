@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildGraph, connectedComponents, gradeForScore, investigate, scoreInvestigation, shortestPath } from '..'
+import { buildGraph, compareInvestigations, connectedComponents, gradeForScore, investigate, scoreInvestigation, shortestPath } from '..'
 import { MockProvider, detectQueryKind } from '../providers/mock'
 import type { Entity, Finding } from '../types'
 
@@ -98,5 +98,17 @@ describe('investigation pipeline', () => {
     const graph = buildGraph('example.com', [signal, { ...signal, source: 'test-2' }])
     expect(graph.entities).toHaveLength(1)
     expect(graph.entities[0]?.sources).toEqual(['test', 'test-2'])
+  })
+
+  it('compares two investigations', async () => {
+    const provider = new MockProvider()
+    const before = await investigate('example.com', { providers: [provider] })
+    const after = { ...before, score: Math.max(0, before.score - 20), findings: before.findings.slice(1) }
+    const comparison = compareInvestigations(before, after)
+    expect(comparison.scoreDelta).toBe(-20)
+    expect(comparison.entityDelta).toBe(0)
+    expect(comparison.sharedEntities).toHaveLength(before.entities.length)
+    expect(comparison.resolvedFindings).toHaveLength(1)
+    expect(comparison.narrative).toContain('improved by 20 points')
   })
 })

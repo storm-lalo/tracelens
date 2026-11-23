@@ -34,6 +34,7 @@ Everything runs locally. No API keys are required for the full demo experience.
 - **Explainable scoring** — risk maths lives in one file (`packages/core/src/scoring.ts`); no opaque model.
 - **Pluggable architecture** — add a data source or an LLM analyst by implementing one interface.
 - **Analyst brief** — deterministic local analyst out of the box, optional OpenAI-compatible provider.
+- **Before/after comparison** — diff two investigations to see score movement, new findings, resolved findings, and entity churn.
 - **Exportable reports** — one click from the UI, or one command from the CLI.
 - **CLI included** — `tracelens investigate example.com --report report.md`.
 - **Typed end-to-end** — shared TypeScript domain model between core, API, CLI, and UI.
@@ -104,6 +105,7 @@ tracelens/
 | `GET` | `/api/investigations` | List recent investigations |
 | `GET` | `/api/investigations/:id` | Full investigation payload |
 | `GET` | `/api/investigations/:id/report` | Markdown report |
+| `POST` | `/api/compare` | Diff two investigations (`{ "left": "id", "right": "id" }`) |
 
 ## Extending it
 
@@ -129,7 +131,7 @@ export class MyProvider implements DataSourceProvider {
 }
 ```
 
-Pass it via `investigate(query, { providers: [myProvider] })`, or wire it into `providersFromEnvironment()`. A live passive-DNS example already lives in `packages/core/src/providers/passive-dns.ts`.
+Pass it via `investigate(query, { providers: [myProvider] })`, or wire it into `providersFromEnvironment()`. Three live adapters ship behind environment flags: passive DNS, certificate transparency, and public code search. Copy `.env.example` to `.env`, set `TRACELENS_ENABLE_LIVE_PROVIDERS=true` plus the relevant endpoint URLs, and they join the demo provider automatically.
 
 ### Add an analyst
 
@@ -145,8 +147,8 @@ The score is a weighted blend of the eight highest entity risks (45%) and the su
 - [x] Interactive graph UI and analyst brief
 - [x] REST API, CLI, Markdown/Mermaid reports
 - [x] CI with typecheck, tests, and web build
-- [ ] Live provider adapters (CT logs, code search, breach indexes)
-- [ ] Saved workspaces and comparison view between two investigations
+- [x] Live provider adapters (passive DNS, CT logs, code search)
+- [x] Comparison view between two investigations
 - [ ] Timeline view of signal observations
 - [ ] PDF report export
 

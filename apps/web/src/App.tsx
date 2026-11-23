@@ -4,6 +4,7 @@ import { api, type Example, type Health } from './api'
 import GraphView, { TYPE_COLOR } from './components/GraphView'
 import Inspector from './components/Inspector'
 import Sidebar from './components/Sidebar'
+import CompareModal from './components/CompareModal'
 
 const EXAMPLE_FALLBACK: Example[] = [
   { label: 'Corporate domain', value: 'northwind-labs.io' },
@@ -20,6 +21,7 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null)
+  const [compareOpen, setCompareOpen] = useState(false)
 
   const loadHistory = useCallback(async () => {
     try {
@@ -103,6 +105,14 @@ export default function App() {
           <span className="version">v0.1.0 · demo build</span>
         </div>
         <div className="topbar-actions">
+          <button
+            className="ghost-button"
+            onClick={() => setCompareOpen(true)}
+            disabled={history.length < 2}
+            title={history.length < 2 ? 'Run at least two investigations to compare' : 'Compare investigations'}
+          >
+            ⇄ Compare
+          </button>
           <a
             className="ghost-button"
             href="https://github.com/storm-lalo/tracelens"
@@ -227,6 +237,8 @@ export default function App() {
           onSelectEntity={handleSelectEntity}
         />
       </main>
+
+      {compareOpen && <CompareModal history={history} onClose={() => setCompareOpen(false)} />}
     </div>
   )
 }
