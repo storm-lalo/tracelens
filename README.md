@@ -35,7 +35,8 @@ Everything runs locally. No API keys are required for the full demo experience.
 - **Pluggable architecture** — add a data source or an LLM analyst by implementing one interface.
 - **Analyst brief** — deterministic local analyst out of the box, optional OpenAI-compatible provider.
 - **Before/after comparison** — diff two investigations to see score movement, new findings, resolved findings, and entity churn.
-- **Exportable reports** — one click from the UI, or one command from the CLI.
+- **Observation timeline** — a chronological view of every collected signal and derived finding, filterable by kind.
+- **Exportable reports** — Markdown/Mermaid from the UI or CLI, plus a print-ready HTML view for **Save as PDF**.
 - **CLI included** — `tracelens investigate example.com --report report.md`.
 - **Typed end-to-end** — shared TypeScript domain model between core, API, CLI, and UI.
 
@@ -106,6 +107,7 @@ tracelens/
 | `GET` | `/api/investigations/:id` | Full investigation payload |
 | `GET` | `/api/investigations/:id/report` | Markdown report |
 | `POST` | `/api/compare` | Diff two investigations (`{ "left": "id", "right": "id" }`) |
+| `GET` | `/api/investigations/:id/print` | Print-ready HTML report |
 
 ## Extending it
 
@@ -149,12 +151,18 @@ The score is a weighted blend of the eight highest entity risks (45%) and the su
 - [x] CI with typecheck, tests, and web build
 - [x] Live provider adapters (passive DNS, CT logs, code search)
 - [x] Comparison view between two investigations
-- [ ] Timeline view of signal observations
-- [ ] PDF report export
+- [x] Timeline view of signal observations
+- [x] Print-ready report export (Save as PDF from the browser)
+- [ ] Authenticated live providers with credential handling
+- [ ] Scheduled re-investigations and drift alerts
 
 ## Ethics & disclaimer
 
 The default provider generates **synthetic signals using reserved documentation ranges**. It exists to develop and demonstrate the product, not to make real-world security decisions. Only collect intelligence from sources you are authorised to access, and validate any finding independently before acting on it.
+
+## Publishing
+
+On Windows, `npm run publish:github` logs you into the GitHub CLI if needed, creates `storm-lalo/tracelens` (public), and pushes `main`. The one-time browser login is the only interactive step.
 
 ## Contributing
 

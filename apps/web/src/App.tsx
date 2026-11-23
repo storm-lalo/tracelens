@@ -115,6 +115,16 @@ export default function App() {
           </button>
           <a
             className="ghost-button"
+            href={investigation ? api.printUrl(investigation.id) : undefined}
+            target="_blank"
+            rel="noreferrer"
+            aria-disabled={!investigation}
+            title={investigation ? 'Open print-ready report (Save as PDF)' : 'Run an investigation first'}
+          >
+            ⎙ PDF
+          </a>
+          <a
+            className="ghost-button"
             href="https://github.com/storm-lalo/tracelens"
             target="_blank"
             rel="noreferrer"

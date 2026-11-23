@@ -1,5 +1,11 @@
 import { Router, type Request, type Response, type NextFunction } from 'express'
-import { compareInvestigations, investigate, providersFromEnvironment, toMarkdown } from '@tracelens/core'
+import {
+  compareInvestigations,
+  investigate,
+  providersFromEnvironment,
+  toMarkdown,
+  toPrintableHtml,
+} from '@tracelens/core'
 import { getInvestigation, listInvestigations, saveInvestigation, stats } from './store'
 
 const EXAMPLES = [
@@ -73,6 +79,15 @@ api.get('/investigations/:id/report', asyncRoute(async (req, res) => {
     return
   }
   res.type('text/markdown').send(toMarkdown(investigation))
+}))
+
+api.get('/investigations/:id/print', asyncRoute(async (req, res) => {
+  const investigation = await getInvestigation(req.params.id)
+  if (!investigation) {
+    res.status(404).json({ error: 'Investigation not found' })
+    return
+  }
+  res.type('html').send(toPrintableHtml(investigation))
 }))
 
 api.post('/compare', asyncRoute(async (req, res) => {

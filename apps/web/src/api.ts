@@ -38,4 +38,5 @@ export const api = {
   compare: (left: string, right: string) =>
     request<Comparison>('/compare', { method: 'POST', body: JSON.stringify({ left, right }) }),
   reportUrl: (id: string) => `/api/investigations/${id}/report`,
+  printUrl: (id: string) => `/api/investigations/${id}/print`,
 }

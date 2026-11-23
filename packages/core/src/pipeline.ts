@@ -3,6 +3,7 @@ import { deriveFindings } from './findings'
 import { entityId } from './graph'
 import { defaultProviders, detectQueryKind } from './providers/mock'
 import { scoreInvestigation, gradeForScore } from './scoring'
+import { buildTimeline } from './timeline'
 import type {
   Entity,
   EntityType,
@@ -169,5 +170,6 @@ export async function investigate(query: string, options: InvestigateOptions = {
     findings,
     providers: signalSets.map((set) => set.provider),
     analyst: analyst.name,
+    timeline: buildTimeline(signals, findings),
   }
 }

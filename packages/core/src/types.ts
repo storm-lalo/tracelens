@@ -61,6 +61,18 @@ export interface Finding {
 
 export type InvestigationStatus = 'complete'
 
+/** A chronological observation rendered in the investigation timeline. */
+export interface TimelineEvent {
+  id: string
+  at: string
+  kind: 'signal' | 'finding' | 'investigation'
+  label: string
+  detail: string
+  source: string
+  severity?: Severity
+  entityId?: string
+}
+
 export interface Investigation {
   id: string
   query: string
@@ -74,6 +86,8 @@ export interface Investigation {
   findings: Finding[]
   providers: string[]
   analyst: string
+  /** Optional for backwards compatibility with investigations saved before v0.2. */
+  timeline?: TimelineEvent[]
 }
 
 export interface InvestigationSummary {

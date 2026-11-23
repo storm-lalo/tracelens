@@ -61,7 +61,7 @@ export class MockProvider implements DataSourceProvider {
     const rand = mulberry32(hash(query.toLowerCase()))
     const domain = baseDomain(query)
     const kind = detectQueryKind(query)
-    const now = new Date(1_600_000_000_000 + (hash(query.toLowerCase()) % 200_000_000_000)).toISOString()
+    const baseTime = 1_600_000_000_000 + (hash(query.toLowerCase()) % 200_000_000_000)
     const signals: RawSignal[] = []
     const pick = <T>(items: T[]): T => items[Math.floor(rand() * items.length)] as T
     const add = (
@@ -71,7 +71,14 @@ export class MockProvider implements DataSourceProvider {
       confidence: number,
       meta: Record<string, unknown> = {},
     ) => {
-      signals.push({ kind: signalKind, value, source, confidence, observedAt: now, meta })
+      signals.push({
+        kind: signalKind,
+        value,
+        source,
+        confidence,
+        observedAt: new Date(baseTime + signals.length * 90_000).toISOString(),
+        meta,
+      })
     }
 
     add(kind === 'username' ? 'username' : kind === 'ip' ? 'ip' : 'domain', query, 'mock:query', 1)

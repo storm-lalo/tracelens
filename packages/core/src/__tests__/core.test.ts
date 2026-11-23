@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { buildGraph, compareInvestigations, connectedComponents, gradeForScore, investigate, scoreInvestigation, shortestPath } from '..'
+import {
+  buildGraph,
+  buildTimeline,
+  compareInvestigations,
+  connectedComponents,
+  gradeForScore,
+  investigate,
+  scoreInvestigation,
+  shortestPath,
+  toPrintableHtml,
+} from '..'
 import { MockProvider, detectQueryKind } from '../providers/mock'
 import type { Entity, Finding } from '../types'
 
@@ -110,5 +120,39 @@ describe('investigation pipeline', () => {
     expect(comparison.sharedEntities).toHaveLength(before.entities.length)
     expect(comparison.resolvedFindings).toHaveLength(1)
     expect(comparison.narrative).toContain('improved by 20 points')
+  })
+
+  it('builds a chronological timeline and a print-ready report', async () => {
+    const result = await investigate('example.com', { providers: [new MockProvider()] })
+    expect(result.timeline).toBeDefined()
+    expect(result.timeline?.length).toBeGreaterThan(result.findings.length)
+
+    const events = result.timeline ?? []
+    for (let i = 1; i < events.length; i += 1) {
+      expect(events[i - 1]?.at <= events[i]?.at).toBe(true)
+    }
+    expect(events.some((event) => event.kind === 'finding')).toBe(true)
+
+    const html = toPrintableHtml(result)
+    expect(html).toContain('<!doctype html>')
+    expect(html).toContain('Save as PDF')
+    expect(html).toContain('example.com')
+    expect(html).toContain('Observation timeline')
+  })
+
+  it('builds a timeline directly from signals and findings', () => {
+    const signal = {
+      kind: 'domain' as const,
+      value: 'example.com',
+      source: 'test:source',
+      confidence: 0.8,
+      observedAt: '2026-01-01T00:00:00.000Z',
+    }
+    const lowFinding = finding('low')
+    const events = buildTimeline([signal], [lowFinding])
+    expect(events).toHaveLength(2)
+    expect(events[0]?.kind).toBe('signal')
+    expect(events[1]?.kind).toBe('finding')
+    expect(events[1]?.severity).toBe('low')
   })
 })

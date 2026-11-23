@@ -15,7 +15,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.base.json",
     "test": "vitest run --config vitest.config.ts",
     "cli": "npm run start -w @tracelens/cli",
-    "start": "npm run start -w @tracelens/server"
+    "start": "npm run start -w @tracelens/server",
+    "publish:github": "powershell -ExecutionPolicy Bypass -File ./scripts/publish.ps1"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

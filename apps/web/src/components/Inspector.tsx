@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react'
 import type { Entity, Finding, Investigation, Severity } from '@tracelens/core'
 import { TYPE_COLOR } from './GraphView'
 
-type Tab = 'findings' | 'analyst' | 'entities'
+type Tab = 'findings' | 'analyst' | 'entities' | 'timeline'
 
 interface Props {
   investigation: Investigation | null
@@ -33,6 +33,9 @@ export default function Inspector({ investigation, selectedEntityId, onSelectEnt
         <button className={tab === 'entities' ? 'active' : ''} onClick={() => setTab('entities')} role="tab">
           Entities
         </button>
+        <button className={tab === 'timeline' ? 'active' : ''} onClick={() => setTab('timeline')} role="tab">
+          Timeline
+        </button>
       </div>
 
       <div className="inspector-body">
@@ -46,6 +49,8 @@ export default function Inspector({ investigation, selectedEntityId, onSelectEnt
           />
         ) : tab === 'analyst' ? (
           <AnalystBrief investigation={investigation} />
+        ) : tab === 'timeline' ? (
+          <TimelineView investigation={investigation} onSelectEntity={onSelectEntity} />
         ) : (
           <EntityBrowser
             investigation={investigation}
@@ -63,7 +68,7 @@ function EmptyInspector() {
     <div className="empty-inspector">
       <div className="empty-icon">◇</div>
       <h3>Nothing to inspect yet</h3>
-      <p>Run an investigation to see prioritised findings, the analyst brief, and the full entity inventory.</p>
+      <p>Run an investigation to see prioritised findings, the analyst brief, the entity inventory, and an observation timeline.</p>
     </div>
   )
 }
@@ -249,5 +254,69 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
       <h4>{title}</h4>
       <div className="section-content">{children}</div>
     </section>
+  )
+}
+
+function TimelineView({
+  investigation,
+  onSelectEntity,
+}: {
+  investigation: Investigation
+  onSelectEntity: (id: string) => void
+}) {
+  const [filter, setFilter] = useState<'all' | 'signal' | 'finding'>('all')
+  const allEvents = investigation.timeline ?? []
+  const events = allEvents.filter((event) => filter === 'all' || event.kind === filter)
+
+  if (allEvents.length === 0) {
+    return <p className="muted">This investigation was saved before timelines were added. Re-run it to build one.</p>
+  }
+
+  return (
+    <div className="timeline">
+      <div className="timeline-filters">
+        {(['all', 'signal', 'finding'] as const).map((value) => (
+          <button
+            key={value}
+            className={filter === value ? 'active' : ''}
+            onClick={() => setFilter(value)}
+          >
+            {value === 'all' ? `All (${allEvents.length})` : value === 'signal' ? 'Signals' : 'Findings'}
+          </button>
+        ))}
+      </div>
+      <div className="timeline-track">
+        {events.map((event) => {
+          const linkedId = event.entityId
+          return (
+            <article
+              key={event.id}
+              className={`timeline-event kind-${event.kind}${event.severity ? ` severity-${event.severity}` : ''}`}
+            >
+              <span className="timeline-marker" />
+              <div className="timeline-time">{event.at.slice(11, 19)} UTC</div>
+              <div className="timeline-content">
+                <div className="timeline-label">
+                  {event.kind === 'finding' && (
+                    <span className={`severity-badge severity-${event.severity ?? 'info'}`}>
+                      {SEVERITY_LABEL[event.severity ?? 'info']}
+                    </span>
+                  )}
+                  {linkedId ? (
+                    <button className="timeline-link" onClick={() => onSelectEntity(linkedId)}>
+                      {event.label}
+                    </button>
+                  ) : (
+                    <strong>{event.label}</strong>
+                  )}
+                </div>
+                <p>{event.detail}</p>
+                <span className="timeline-source">{event.source}</span>
+              </div>
+            </article>
+          )
+        })}
+      </div>
+    </div>
   )
 }
