@@ -1,0 +1,16 @@
+{
+  "name": "@tracelens/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "tracelens": "./src/index.ts"
+  },
+  "scripts": {
+    "start": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@tracelens/core": "*",
+    "commander": "^13.1.0"
+  }
+}
