@@ -7,7 +7,7 @@ Logs in with the GitHub CLI if needed, creates storm-lalo/tracelens if it does
 not exist, then pushes the current main branch. The only interactive step is
 the first-time GitHub login in your browser.
 #>
-$ErrorActionPreference = 'Stop'
+$ErrorActionPreference = 'Continue'
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $repoRoot
@@ -21,7 +21,7 @@ if (-not $gh) {
 }
 
 Write-Host '==> Checking GitHub authentication'
-& $gh auth status 2>&1 | Out-Null
+& $gh auth status *> $null
 if ($LASTEXITCODE -ne 0) {
   Write-Host '==> Not logged in. Opening browser for one-time GitHub login...'
   & $gh auth login --web --git-protocol https
@@ -35,16 +35,18 @@ $name = 'tracelens'
 $slug = "$owner/$name"
 
 Write-Host "==> Checking whether $slug exists"
-& $gh repo view $slug 2>&1 | Out-Null
+& $gh repo view $slug *> $null
 if ($LASTEXITCODE -ne 0) {
-  Write-Host "==> Creating $slug (public) and pushing main"
-  & $gh repo create $slug --public --source=. --remote=origin --push
-} else {
-  Write-Host "==> Repository exists; pushing main"
-  git remote set-url origin "https://github.com/$slug.git"
-  git push -u origin main
+  Write-Host "==> Creating $slug (public)"
+  & $gh repo create $slug --public
+  if ($LASTEXITCODE -ne 0) {
+    throw 'Repository creation failed. Check the output above.'
+  }
 }
 
+Write-Host '==> Pushing main'
+git remote set-url origin "https://github.com/$slug.git"
+git push -u origin main
 if ($LASTEXITCODE -ne 0) {
   throw 'Publish failed. Check the output above.'
 }
